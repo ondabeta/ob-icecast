@@ -1,11 +1,30 @@
-FROM stephanel/icecast-kh
+FROM ubuntu:bionic
 
-COPY --from=hairyhenderson/gomplate:v3.8.0-slim /gomplate /bin/gomplate
+ENV DEBIAN_FRONTEND noninteractive
+ENV IC_VERSION "2.4.0-kh12"
 
-COPY start.sh /start.sh
-COPY entrypoint.sh /entrypoint.sh
+RUN apt-get -qq -y update && \
+	apt-get -qq -y install build-essential \
+		wget curl libxml2-dev libxslt1-dev \
+		libogg-dev libvorbis-dev libtheora-dev \
+		libspeex-dev python-pip && \
+	wget "https://github.com/karlheyes/icecast-kh/archive/icecast-$IC_VERSION.tar.gz" -O- | tar zxvf - && \
+	cd "icecast-kh-icecast-$IC_VERSION" && \
+	./configure --prefix=/usr --sysconfdir=/etc --localstatedir=/var && \
+	make && make install && useradd icecast && \
+	chown -R icecast /etc/icecast.xml
 
-COPY status-json.xsl /usr/share/icecast/web/status-json.xsl
-COPY icecast.xml /etc/icecast.xml.base
+RUN pip install supervisor supervisor-stdout
 
+ADD ./entrypoint.sh /entrypoint.sh
+ADD ./start.sh /start.sh
+ADD ./etc /etc
+ADD ./status-json.xsl /usr/share/icecast/web/status-json.xsl
+
+CMD ["/start.sh"]
 ENTRYPOINT ["/entrypoint.sh"]
+
+EXPOSE 8000
+VOLUME ["/config", "/var/log/icecast"]
+
+COPY --from=hairyhenderson/gomplate:alpine /bin/gomplate /bin/gomplate
