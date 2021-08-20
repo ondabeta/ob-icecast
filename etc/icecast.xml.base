@@ -56,7 +56,7 @@
 
     <!-- You may have multiple <listener> elements -->
     <listen-socket>
-        <port>8000</port>
+        <port>{{.Env.ICECAST_PORT}}</port>
         <!-- <bind-address>127.0.0.1</bind-address> -->
         <!-- use <shoutcast-mount> in here to implicitly define port n+1 -->
     </listen-socket>
